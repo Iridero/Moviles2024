@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,7 +19,7 @@ namespace AppInventario.Data
             {
                 connection.Open();
                 var command = connection.CreateCommand();
-                command.CommandText = @"CREATE IF NOT EXIST articulos(
+                command.CommandText = @"CREATE TABLE IF NOT EXISTS articulos(
                                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                                             descripcion VARCHAR(60) NOT NULL,
                                             precio DECIMAL NOT NULL,
@@ -80,9 +81,9 @@ namespace AppInventario.Data
         }
 
 
-        public async Task<IEnumerable<Articulo>> GetAll()
+        public async Task<IEnumerable<Articulo>?> GetAll()
         {
-            List<Articulo> articuloList = null;
+            List<Articulo>? articuloList = null;
 
             using (var connection = new SqliteConnection(_connectionString))
             {
@@ -108,6 +109,38 @@ namespace AppInventario.Data
             }
 
             return articuloList;
+        }
+
+        public async Task Update(Articulo articulo)
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+                command.CommandText = @"UPDATE articulos
+                                    SET descripcion = $descripcion,
+                                        precio=$precio,
+                                        existencia=$existencia
+                                    WHERE id = $id";
+                command.Parameters.AddWithValue("$id", articulo.Id);
+                command.Parameters.AddWithValue("$descripcion", articulo.Descripcion);
+                command.Parameters.AddWithValue("$precio", articulo.Precio);
+                command.Parameters.AddWithValue("$existencia", articulo.Existencia);
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        public async Task Delete(int id)
+        {
+            using(var connection = new SqliteConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+                command.CommandText = @"DELETE FROM articulos
+                                        WHERE id = $id";
+                command.Parameters.AddWithValue("$id", id);
+                await command.ExecuteNonQueryAsync();
+            }
         }
     }
 }
